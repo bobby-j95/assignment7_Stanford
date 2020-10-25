@@ -1,64 +1,60 @@
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
 import java.util.*;
 import acm.graphics.*;
 import acm.program.GraphicsProgram;
-import acmx.export.javax.swing.*;
+import javax.swing.*;
 
-public class usingInteractors extends GraphicsProgram {
+public class UsingInteractors extends GraphicsProgram {
 
 	private static final double BOX_WIDTH = 120;
 	private static final double BOX_HEIGHT = 50;
 
-	private static JTextField field = new JTextField(40);
-	private static JLabel name = new JLabel("Name:   ");
-	private static JButton addValue = new JButton("Add");
-	private static JButton removeValue = new JButton("Remove");
-	private static JButton clearAll = new JButton("Clear");
+	private JTextField field = new JTextField(25);
+	private JLabel name = new JLabel("Name:   ");
+	private JButton addValue = new JButton("Add");
+	private JButton removeValue = new JButton("Remove");
+	private JButton clearAll = new JButton("Clear");
+	private GObject current;
+	private GPoint last;
 
 	private HashMap<String, GCompound> compoundList;
 
 	public void init() {
 
-		field.addActionListener(this);
-		addMouseListener();
-
 		add(name, SOUTH);
+		field.addActionListener(this);
 		add(field, SOUTH);
 		add(addValue, SOUTH);
 		add(removeValue, SOUTH);
 		add(clearAll, SOUTH);
 
+		addActionListeners();
+		addMouseListeners();
 		compoundList = new HashMap<String, GCompound>();
 
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		String cmd = e.getActionCommand();
-		if (cmd.equals("Add")) {
-			GCompound g = new boxCompound(field.getText());
-			compoundList.add(field.getText(), g);
-			println("   " + field.getText());
-		} else if (cmd.equals("Remove")) {
+		Object cmd = e.getSource();
+		if (cmd == field || cmd == addValue) {
+			boxCompound(field.getText());
+		} else if (cmd == removeValue) {
 			removeBox(field.getText());
+		} else if (cmd == clearAll) {
+			clearEverything();
 		}
+
 	}
 
-	public GCompound boxCompound(String s) {
+	public void boxCompound(String s) {
 		GCompound boxCompound = new GCompound();
-		boxCompound.add(box());
-		boxCompound.add(boxLabel(s));
-		return boxCompound;
-	}
-
-	public GRect box() {
-		GRect newBox = new GRect(34, 50, BOX_WIDTH, BOX_HEIGHT);
-		newBox.setFilled(false);
-		return newBox;
-	}
-
-	public GLabel boxLabel(String val) {
-		GLabel newLabel = new GLabel(val);
-		return newLabel;
+		GRect boxOutline = new GRect(BOX_WIDTH, BOX_HEIGHT);
+		GLabel boxLabel = new GLabel(s);
+		boxCompound.add(boxOutline, -BOX_WIDTH / 2, -BOX_HEIGHT / 2);
+		boxCompound.add(boxLabel, -boxLabel.getWidth() / 2, boxLabel.getAscent() / 2);
+		add(boxCompound, getWidth() / 2, getHeight() / 2);
+		compoundList.put(s, boxCompound);
 	}
 
 	private void removeBox(String name) {
@@ -68,12 +64,29 @@ public class usingInteractors extends GraphicsProgram {
 		}
 	}
 
-	private void removeContents() {
+	private void clearEverything() {
 		Iterator<String> i = compoundList.keySet().iterator();
 		while (i.hasNext()) {
 			removeBox(i.next());
 		}
 		compoundList.clear();
+	}
+
+	public void mousePressed(MouseEvent e) {
+		last = new GPoint(e.getPoint());
+		current = getElementAt(last);
+	}
+
+	public void mouseDragged(MouseEvent e) {
+		if (current != null) {
+			current.move(e.getX() - last.getX(), e.getY() - last.getY());
+			last = new GPoint(e.getPoint());
+		}
+	}
+
+	public void mouseClicked(MouseEvent e) {
+		if (current != null)
+			current.sendToFront();
 	}
 
 }
